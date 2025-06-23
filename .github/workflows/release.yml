@@ -37,8 +37,8 @@ jobs:
     - name: Build and push Frontend
       uses: docker/build-push-action@v5
       with:
-        context: ./apps/emptymug-website/frontend
-        file: ./apps/emptymug-website/frontend/Dockerfile
+        context: ./emptymug-website/frontend
+        file: ./emptymug-website/frontend/Dockerfile
         push: true
         tags: |
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.version.outputs.VERSION }}
@@ -48,8 +48,8 @@ jobs:
     - name: Build and push Backend
       uses: docker/build-push-action@v5
       with:
-        context: ./apps/emptymug-website/backend
-        file: ./apps/emptymug-website/backend/Dockerfile
+        context: ./emptymug-website/backend
+        file: ./emptymug-website/backend/Dockerfile
         push: true
         tags: |
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.version.outputs.VERSION }}
