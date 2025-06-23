@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract version
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Build and push Frontend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./apps/emptymug-website/frontend
+        file: ./apps/emptymug-website/frontend/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.version.outputs.VERSION }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
+        platforms: linux/amd64,linux/arm64
+
+    - name: Build and push Backend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./apps/emptymug-website/backend
+        file: ./apps/emptymug-website/backend/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.version.outputs.VERSION }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
+        platforms: linux/amd64,linux/arm64
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        cat > release_notes.md << EOF
+        # EmptyMug Website ${{ steps.version.outputs.VERSION }}
+        
+        ## 🚀 What's New
+        
+        This release includes the complete EmptyMug website with:
+        
+        ### ✨ Features
+        - Modern Apple-inspired design
+        - Responsive React frontend
+        - FastAPI Python backend
+        - Contact form with email integration
+        - Country code selector with flags
+        - Beautiful animations and transitions
+        
+        ### 📦 Docker Images
+        
+        **Frontend**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.version.outputs.VERSION }}\`
+        **Backend**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.version.outputs.VERSION }}\`
+        
+        ### 🚀 Quick Start
+        
+        \`\`\`bash
+        # Pull and run the containers
+        docker run -p 3000:80 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.version.outputs.VERSION }}
+        docker run -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.version.outputs.VERSION }}
+        \`\`\`
+        
+        Or use docker-compose:
+        
+        \`\`\`bash
+        # Update the image tags in docker-compose.prod.yml to use this version
+        docker-compose -f apps/emptymug-website/docker-compose.prod.yml up -d
+        \`\`\`
+        
+        ### 📧 Configuration
+        
+        Don't forget to set your email configuration in the backend environment variables:
+        - EMAIL_HOST
+        - EMAIL_PORT  
+        - EMAIL_USER
+        - EMAIL_PASSWORD
+        EOF
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.VERSION }}
+        release_name: EmptyMug Website ${{ steps.version.outputs.VERSION }}
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
