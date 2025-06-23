@@ -25,7 +25,7 @@ jobs:
       uses: aquasecurity/trivy-action@master
       with:
         scan-type: 'fs'
-        scan-ref: './apps/emptymug-website/frontend'
+        scan-ref: './frontend'
         format: 'sarif'
         output: 'trivy-frontend.sarif'
 
@@ -34,7 +34,7 @@ jobs:
       uses: aquasecurity/trivy-action@master
       with:
         scan-type: 'fs'
-        scan-ref: './apps/emptymug-website/backend'
+        scan-ref: './backend'
         format: 'sarif'
         output: 'trivy-backend.sarif'
 
@@ -62,8 +62,8 @@ jobs:
     - name: Build Docker image for scanning
       uses: docker/build-push-action@v5
       with:
-        context: ./apps/emptymug-website/${{ matrix.service }}
-        file: ./apps/emptymug-website/${{ matrix.service }}/Dockerfile
+        context: ./${{ matrix.service }}
+        file: ./${{ matrix.service }}/Dockerfile
         push: false
         tags: emptymug-${{ matrix.service }}:scan
         load: true
