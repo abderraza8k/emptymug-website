@@ -1,6 +1,6 @@
 # EmptyMug Website
 
-[![Build and Publish](https://github.com/your-username/emptymug-project/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/your-username/emptymug-project/actions/workflows/build-and-publish.yml)
+[![Build and Publish](https://github.com/abderraza8k/emptymug-project/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/abderraza8k/emptymug-project/actions/workflows/build-and-publish.yml)
 
 A modern, responsive website for EmptyMug built with React and Python FastAPI, featuring a sleek Apple-inspired design with smooth animations.
 
@@ -20,8 +20,8 @@ A modern, responsive website for EmptyMug built with React and Python FastAPI, f
 
 The application is automatically built and published to GitHub Container Registry:
 
-- **Frontend**: `ghcr.io/your-username/emptymug-project-frontend:latest`
-- **Backend**: `ghcr.io/your-username/emptymug-project-backend:latest`
+- **Frontend**: `ghcr.io/abderraza8k/emptymug-project-frontend:latest`
+- **Backend**: `ghcr.io/abderraza8k/emptymug-project-backend:latest`
 
 ### Quick Deploy with Docker
 
@@ -30,8 +30,8 @@ The application is automatically built and published to GitHub Container Registr
 docker-compose -f docker-compose.prod.yml up -d
 
 # Or run individual containers
-docker run -p 3000:80 ghcr.io/your-username/emptymug-project-frontend:latest
-docker run -p 8000:8000 ghcr.io/your-username/emptymug-project-backend:latest
+docker run -p 3000:80 ghcr.io/abderraza8k/emptymug-project-frontend:latest
+docker run -p 8000:8000 ghcr.io/abderraza8k/emptymug-project-backend:latest
 ```
 
 ## 🛠️ Tech Stack
