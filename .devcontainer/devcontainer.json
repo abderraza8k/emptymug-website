@@ -1,0 +1,26 @@
+{
+  "name": "EmptyMug Website",
+  "dockerComposeFile": "../docker-compose.dev.yml",
+  "service": "frontend",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-python.python",
+        "ms-python.pylint",
+        "ms-python.black-formatter",
+        "ms-vscode.vscode-typescript-next"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.formatting.provider": "black"
+      }
+    }
+  },
+  "forwardPorts": [3000, 8000],
+  "postCreateCommand": "cd frontend && npm install"
+}
