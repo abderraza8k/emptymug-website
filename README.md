@@ -11,6 +11,26 @@ A modern, responsive website for EmptyMug built with React and Python FastAPI, f
 - **Email Integration**: Automatic email sending to contact@emptymug.fr
 - **TypeScript**: Full TypeScript support for better development experience
 - **Dev Containers**: Ready-to-use development environment
+- **Docker Ready**: Production-ready Docker containers with automated builds
+- **CI/CD**: GitHub Actions for automated testing, building, and publishing
+
+## 📦 Docker Images
+
+The application is automatically built and published to GitHub Container Registry:
+
+- **Frontend**: `ghcr.io/your-username/emptymug-project-frontend:latest`
+- **Backend**: `ghcr.io/your-username/emptymug-project-backend:latest`
+
+### Quick Deploy with Docker
+
+```bash
+# Using Docker Compose (Recommended)
+docker-compose -f docker-compose.prod.yml up -d
+
+# Or run individual containers
+docker run -p 3000:80 ghcr.io/your-username/emptymug-project-frontend:latest
+docker run -p 8000:8000 ghcr.io/your-username/emptymug-project-backend:latest
+```
 
 ## 🛠️ Tech Stack
 
