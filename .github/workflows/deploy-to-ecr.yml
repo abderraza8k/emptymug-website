@@ -1,0 +1,211 @@
+name: Build and Deploy to AWS ECR
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/emptymug-website/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'apps/emptymug-website/**'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY_FRONTEND: emptymug-frontend
+  ECR_REPOSITORY_BACKEND: emptymug-backend
+
+jobs:
+  setup-repositories:
+    name: Setup ECR Repositories
+    runs-on: ubuntu-latest
+    outputs:
+      ecr-registry: ${{ steps.login-ecr.outputs.registry }}
+    
+    steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Create ECR repositories if they don't exist
+      run: |
+        # Create frontend repository
+        aws ecr describe-repositories --repository-names $ECR_REPOSITORY_FRONTEND --region $AWS_REGION 2>/dev/null || \
+        aws ecr create-repository \
+          --repository-name $ECR_REPOSITORY_FRONTEND \
+          --region $AWS_REGION \
+          --image-scanning-configuration scanOnPush=true \
+          --lifecycle-policy-text '{
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 10 images",
+                "selection": {
+                  "tagStatus": "tagged",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }'
+        
+        # Create backend repository
+        aws ecr describe-repositories --repository-names $ECR_REPOSITORY_BACKEND --region $AWS_REGION 2>/dev/null || \
+        aws ecr create-repository \
+          --repository-name $ECR_REPOSITORY_BACKEND \
+          --region $AWS_REGION \
+          --image-scanning-configuration scanOnPush=true \
+          --lifecycle-policy-text '{
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 10 images",
+                "selection": {
+                  "tagStatus": "tagged",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }'
+
+  build-and-push:
+    name: Build and Push to ECR
+    runs-on: ubuntu-latest
+    needs: setup-repositories
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push Frontend image
+      env:
+        ECR_REGISTRY: ${{ needs.setup-repositories.outputs.ecr-registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        echo "Building frontend image..."
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          --push \
+          --file apps/emptymug-website/frontend/Dockerfile \
+          --tag $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG \
+          --tag $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:latest \
+          --cache-from type=gha \
+          --cache-to type=gha,mode=max \
+          apps/emptymug-website/frontend
+
+    - name: Build and push Backend image
+      env:
+        ECR_REGISTRY: ${{ needs.setup-repositories.outputs.ecr-registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        echo "Building backend image..."
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          --push \
+          --file apps/emptymug-website/backend/Dockerfile \
+          --tag $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG \
+          --tag $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:latest \
+          --cache-from type=gha \
+          --cache-to type=gha,mode=max \
+          apps/emptymug-website/backend
+
+    - name: Output image URIs
+      env:
+        ECR_REGISTRY: ${{ needs.setup-repositories.outputs.ecr-registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        echo "## 🚀 Successfully built and pushed images" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Frontend Image:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Tagged: \`$ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG\`" >> $GITHUB_STEP_SUMMARY
+        echo "- Latest: \`$ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:latest\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Backend Image:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Tagged: \`$ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG\`" >> $GITHUB_STEP_SUMMARY
+        echo "- Latest: \`$ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:latest\`" >> $GITHUB_STEP_SUMMARY
+
+  security-scan:
+    name: Security Scan Results
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Wait for scan completion and get results
+      env:
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        echo "## 🔍 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Wait a bit for scans to complete (they start automatically due to scanOnPush=true)
+        sleep 30
+        
+        # Get frontend scan results
+        echo "**Frontend Image Scan:**" >> $GITHUB_STEP_SUMMARY
+        FRONTEND_SCAN=$(aws ecr describe-image-scan-findings \
+          --repository-name $ECR_REPOSITORY_FRONTEND \
+          --image-id imageTag=$IMAGE_TAG \
+          --region $AWS_REGION 2>/dev/null || echo "Scan in progress...")
+        
+        if [[ "$FRONTEND_SCAN" == *"COMPLETE"* ]]; then
+          CRITICAL=$(echo "$FRONTEND_SCAN" | jq -r '.imageScanFindingsSummary.findingCounts.CRITICAL // 0')
+          HIGH=$(echo "$FRONTEND_SCAN" | jq -r '.imageScanFindingsSummary.findingCounts.HIGH // 0')
+          MEDIUM=$(echo "$FRONTEND_SCAN" | jq -r '.imageScanFindingsSummary.findingCounts.MEDIUM // 0')
+          echo "- Critical: $CRITICAL, High: $HIGH, Medium: $MEDIUM" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- Scan in progress or failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Get backend scan results
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Backend Image Scan:**" >> $GITHUB_STEP_SUMMARY
+        BACKEND_SCAN=$(aws ecr describe-image-scan-findings \
+          --repository-name $ECR_REPOSITORY_BACKEND \
+          --image-id imageTag=$IMAGE_TAG \
+          --region $AWS_REGION 2>/dev/null || echo "Scan in progress...")
+        
+        if [[ "$BACKEND_SCAN" == *"COMPLETE"* ]]; then
+          CRITICAL=$(echo "$BACKEND_SCAN" | jq -r '.imageScanFindingsSummary.findingCounts.CRITICAL // 0')
+          HIGH=$(echo "$BACKEND_SCAN" | jq -r '.imageScanFindingsSummary.findingCounts.HIGH // 0')
+          MEDIUM=$(echo "$BACKEND_SCAN" | jq -r '.imageScanFindingsSummary.findingCounts.MEDIUM // 0')
+          echo "- Critical: $CRITICAL, High: $HIGH, Medium: $MEDIUM" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- Scan in progress or failed" >> $GITHUB_STEP_SUMMARY
+        fi
