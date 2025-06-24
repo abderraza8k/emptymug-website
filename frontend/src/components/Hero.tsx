@@ -1,16 +1,24 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import VoronoiBackground from './VoronoiBackground';
 
 const Hero: React.FC = () => {
   return (
     <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-white relative overflow-hidden">
+      {/* Voronoi Background */}
+      <VoronoiBackground 
+        pointCount={8}
+        opacity={0.5}
+        className="z-0"
+      />
+      
       {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-100 rounded-full opacity-20 animate-float"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary-50 rounded-full opacity-30 animate-float" style={{ animationDelay: '1s' }}></div>
+      <div className="absolute inset-0 overflow-hidden z-10">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-100 rounded-full opacity-10 animate-float"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary-50 rounded-full opacity-15 animate-float" style={{ animationDelay: '1s' }}></div>
       </div>
       
-      <div className="container mx-auto px-6 text-center relative z-10">
+      <div className="container mx-auto px-6 text-center relative z-20">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}

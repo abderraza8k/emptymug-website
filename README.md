@@ -2,15 +2,18 @@
 
 [![Build and Publish](https://github.com/abderraza8k/emptymug-project/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/abderraza8k/emptymug-project/actions/workflows/build-and-publish.yml)
 
-A modern, responsive website for EmptyMug built with React and Python FastAPI, featuring a sleek Apple-inspired design with smooth animations.
+A modern, responsive website for EmptyMug built with React and Python FastAPI, featuring a sleek Apple-inspired design with smooth animations, database storage, and AI-powered content moderation.
 
 ## 🚀 Features
 
 - **Modern Design**: Apple-inspired UI with clean aesthetics
+- **Interactive Background**: Subtle animated Voronoi diagram
 - **Responsive**: Works perfectly on all devices
 - **Smooth Animations**: Subtle animations powered by Framer Motion
-- **Contact Form**: Advanced contact form with country code selection
-- **Email Integration**: Automatic email sending to contact@emptymug.fr
+- **Advanced Contact Form**: Enhanced validation with country code selection
+- **Database Storage**: Multi-database support (In-memory, PostgreSQL, DynamoDB)
+- **AI Content Moderation**: Ollama LLM integration for content filtering
+- **Enhanced Validation**: Email format, phone number, and input validation
 - **TypeScript**: Full TypeScript support for better development experience
 - **Dev Containers**: Ready-to-use development environment
 - **Docker Ready**: Production-ready Docker containers with automated builds
@@ -85,6 +88,8 @@ docker run -p 8000:8000 ghcr.io/abderraza8k/emptymug-project-backend:latest
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
+   - PostgreSQL: localhost:5432
+   - Ollama: http://localhost:11434
 
 ### Using Dev Containers (Recommended)
 
@@ -94,7 +99,50 @@ docker run -p 8000:8000 ghcr.io/abderraza8k/emptymug-project-backend:latest
 4. Select "Dev Containers: Reopen in Container"
 5. VS Code will build and open the dev container automatically
 
-## 📧 Email Configuration
+## 🗄️ Database Configuration
+
+The application supports multiple database backends:
+
+### In-Memory Database (Default)
+Perfect for development and testing:
+```env
+DATABASE_TYPE=memory
+```
+
+### PostgreSQL (Recommended for Production)
+```env
+DATABASE_TYPE=postgres
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
+POSTGRES_DB=emptymug
+```
+
+### DynamoDB (AWS Cloud)
+```env
+DATABASE_TYPE=dynamodb
+DYNAMODB_REGION=us-east-1
+DYNAMODB_TABLE_NAME=emptymug_contacts
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+```
+
+## 🤖 AI Content Moderation
+
+The application uses Ollama for AI-powered content moderation:
+
+```env
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=llama2
+```
+
+### Setup Ollama
+1. Install Ollama: `curl -fsSL https://ollama.ai/install.sh | sh`
+2. Start service: `ollama serve`
+3. Pull model: `ollama pull llama2`
+
+## 📧 Email Configuration (Legacy)
 
 The contact form sends emails using SMTP. For Gmail:
 

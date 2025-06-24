@@ -25,8 +25,51 @@ services:
       - ./backend:/app
     environment:
       - PYTHONPATH=/app
-      - EMAIL_HOST=smtp.gmail.com
-      - EMAIL_PORT=587
-      - EMAIL_USER=contact@emptymug.fr
-      - EMAIL_PASSWORD=your_app_password_here
+      - DATABASE_TYPE=postgres
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=emptymug
+      - POSTGRES_PASSWORD=emptymug_password
+      - POSTGRES_DB=emptymug
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=llama2
       - CORS_ORIGINS=http://localhost:3000
+    depends_on:
+      - postgres
+      - ollama
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=emptymug
+      - POSTGRES_PASSWORD=emptymug_password
+      - POSTGRES_DB=emptymug
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U emptymug"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    command: sh -c "ollama serve & sleep 10 && ollama pull llama2 && wait"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  postgres_data:
+  ollama_data:
